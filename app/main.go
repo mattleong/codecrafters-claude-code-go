@@ -7,6 +7,8 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"os/exec"
+	"strings"
 
 	"github.com/openai/openai-go/v3"
 	"github.com/openai/openai-go/v3/option"
@@ -45,6 +47,22 @@ func agent_loop(client openai.Client, prompt []openai.ChatCompletionMessageParam
 							"content": map[string]any{
 								"type":        "string",
 								"description": "The content to write to the file",
+							},
+						},
+					},
+				}),
+				openai.ChatCompletionFunctionTool(openai.FunctionDefinitionParam{
+					Name:        "Bash",
+					Description: openai.String("Execute a shell command"),
+					Parameters: openai.FunctionParameters{
+						"type": "object",
+						"required": []string{
+							"command",
+						},
+						"properties": map[string]any{
+							"command": map[string]any{
+								"type":        "string",
+								"description": "The command to execute",
 							},
 						},
 					},
@@ -117,6 +135,26 @@ func agent_loop(client openai.Client, prompt []openai.ChatCompletionMessageParam
 					ToolCallID: tool_call.ID,
 					Content: openai.ChatCompletionToolMessageParamContentUnion{
 						OfString: openai.String(params["content"]),
+					},
+				},
+			})
+		}
+
+		if tool_call.Type == "function" && tool_call.Function.Name == "Bash" {
+			command_parts := strings.Split(params["command"], " ")
+			out, err := exec.Command(command_parts[0], command_parts[1:]...).CombinedOutput()
+			fmt.Fprintln(os.Stderr, params["command"])
+			if err != nil {
+				fmt.Fprintln(os.Stderr, err)
+				log.Fatalf("Unable to run shell command: %s", err)
+			}
+
+			messages = append(messages, openai.ChatCompletionMessageParamUnion{
+				OfTool: &openai.ChatCompletionToolMessageParam{
+					Role:       "tool",
+					ToolCallID: tool_call.ID,
+					Content: openai.ChatCompletionToolMessageParamContentUnion{
+						OfString: openai.String(string(out)),
 					},
 				},
 			})
