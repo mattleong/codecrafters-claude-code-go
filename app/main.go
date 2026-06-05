@@ -2,8 +2,10 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"flag"
 	"fmt"
+	"log"
 	"os"
 
 	"github.com/openai/openai-go/v3"
@@ -68,8 +70,30 @@ func main() {
 		panic("No choices in response")
 	}
 
+	var tool_calls = resp.Choices[0].Message.ToolCalls
+
+	for i := range tool_calls {
+		var tool_call = tool_calls[i]
+
+		if tool_call.Type == "function" && tool_call.Function.Name == "Read" {
+			argsJSON := tool_call.Function.Arguments
+			var params map[string]string
+			err := json.Unmarshal([]byte(argsJSON), &params)
+			if err != nil {
+				log.Fatalf("Failed to parse response: %s", err)
+			}
+
+			content, err := os.ReadFile(params["file_path"])
+			if err != nil {
+				log.Fatalf("Failed to read file: %s", err)
+			}
+
+			fmt.Print(string(content))
+		}
+	}
+
 	// You can use print statements as follows for debugging, they'll be visible when running tests.
-	fmt.Fprintln(os.Stderr, "Logs from your program will appear here!")
+	// fmt.Fprintln(os.Stderr, "Logs from your program will appear here!")
 
 	// TODO: Uncomment the line below to pass the first stage
 	fmt.Print(resp.Choices[0].Message.Content)
