@@ -104,7 +104,7 @@ func AgentLoop(ctx context.Context, client openai.Client, prompt []openai.ChatCo
 		case "Bash":
 			messages, err = BashTool(toolCall, params, messages)
 		default:
-			return "", fmt.Errorf("Unsupported tool call")
+			return "", fmt.Errorf("unsupported tool call")
 		}
 
 		if err != nil {

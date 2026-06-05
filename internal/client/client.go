@@ -1,22 +1,23 @@
 package client
 
 import (
+	"fmt"
 	"os"
 
 	"github.com/openai/openai-go/v3"
 	"github.com/openai/openai-go/v3/option"
 )
 
-func GetClient() openai.Client {
+func NewClient() (openai.Client, error) {
 	apiKey := os.Getenv("OPENROUTER_API_KEY")
-	baseUrl := os.Getenv("OPENROUTER_BASE_URL")
-	if baseUrl == "" {
-		baseUrl = "https://openrouter.ai/api/v1"
+	baseURL := os.Getenv("OPENROUTER_BASE_URL")
+	if baseURL == "" {
+		baseURL = "https://openrouter.ai/api/v1"
 	}
 
 	if apiKey == "" {
-		panic("Env variable OPENROUTER_API_KEY not found")
+		return openai.Client{}, fmt.Errorf("no API key found")
 	}
 
-	return openai.NewClient(option.WithAPIKey(apiKey), option.WithBaseURL(baseUrl))
+	return openai.NewClient(option.WithAPIKey(apiKey), option.WithBaseURL(baseURL)), nil
 }

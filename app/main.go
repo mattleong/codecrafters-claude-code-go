@@ -16,12 +16,15 @@ func main() {
 	flag.Parse()
 
 	if prompt == "" {
-		panic("Prompt must not be empty")
+		log.Fatalf("Prompt must not be empty")
 	}
 
-	client := c.GetClient()
+	client, err := c.NewClient()
+	if err != nil {
+		log.Fatalf("Unable to initialize client: %s", err)
+	}
 
-	initial_prompt := []openai.ChatCompletionMessageParamUnion{
+	initialPrompt := []openai.ChatCompletionMessageParamUnion{
 		{
 			OfUser: &openai.ChatCompletionUserMessageParam{
 				Content: openai.ChatCompletionUserMessageParamContentUnion{
@@ -33,7 +36,7 @@ func main() {
 
 	ctx := context.Background()
 
-	result, err := agent.AgentLoop(ctx, client, initial_prompt)
+	result, err := agent.AgentLoop(ctx, client, initialPrompt)
 	if err != nil {
 		log.Fatalf("Could not complete agent loop: %s", err)
 	}

@@ -10,7 +10,12 @@ import (
 )
 
 func ReadTool(toolCall openai.ChatCompletionMessageToolCallUnion, params map[string]string, messages []openai.ChatCompletionMessageParamUnion) ([]openai.ChatCompletionMessageParamUnion, error) {
-	content, err := os.ReadFile(params["file_path"])
+	filePath, ok := params["file_path"]
+	if !ok || filePath == "" {
+		return nil, fmt.Errorf("missing file_path")
+	}
+
+	content, err := os.ReadFile(filePath)
 	if err != nil {
 		return nil, fmt.Errorf("could not read file: %w", err)
 	}
@@ -29,9 +34,19 @@ func ReadTool(toolCall openai.ChatCompletionMessageToolCallUnion, params map[str
 }
 
 func WriteTool(toolCall openai.ChatCompletionMessageToolCallUnion, params map[string]string, messages []openai.ChatCompletionMessageParamUnion) ([]openai.ChatCompletionMessageParamUnion, error) {
-	err := os.WriteFile(params["file_path"], []byte(params["content"]), 0644)
+	filePath, ok := params["file_path"]
+	if !ok || filePath == "" {
+		return nil, fmt.Errorf("missing file_path")
+	}
+
+	content, ok := params["content"]
+	if !ok {
+		return nil, fmt.Errorf("missing content")
+	}
+
+	err := os.WriteFile(filePath, []byte(content), 0644)
 	if err != nil {
-		return nil, fmt.Errorf("could not read file: %w", err)
+		return nil, fmt.Errorf("could not write file: %w", err)
 	}
 
 	messages = append(messages, openai.ChatCompletionMessageParamUnion{
@@ -39,7 +54,7 @@ func WriteTool(toolCall openai.ChatCompletionMessageToolCallUnion, params map[st
 			Role:       "tool",
 			ToolCallID: toolCall.ID,
 			Content: openai.ChatCompletionToolMessageParamContentUnion{
-				OfString: openai.String(params["content"]),
+				OfString: openai.String(content),
 			},
 		},
 	})
@@ -47,8 +62,13 @@ func WriteTool(toolCall openai.ChatCompletionMessageToolCallUnion, params map[st
 }
 
 func BashTool(toolCall openai.ChatCompletionMessageToolCallUnion, params map[string]string, messages []openai.ChatCompletionMessageParamUnion) ([]openai.ChatCompletionMessageParamUnion, error) {
-	command_parts := strings.Fields(params["command"])
-	out, err := exec.Command(command_parts[0], command_parts[1:]...).CombinedOutput()
+	command, ok := params["command"]
+	if !ok {
+		return nil, fmt.Errorf("missing command")
+	}
+
+	commandParts := strings.Fields(command)
+	out, err := exec.Command(commandParts[0], commandParts[1:]...).CombinedOutput()
 	if err != nil {
 		return nil, fmt.Errorf("could not run shell command: %w", err)
 	}
