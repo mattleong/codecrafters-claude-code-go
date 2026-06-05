@@ -5,12 +5,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/openai/openai-go/v3"
-	"log"
-	"os"
 )
 
-func AgentLoop(client openai.Client, prompt []openai.ChatCompletionMessageParamUnion) string {
-	resp, err := client.Chat.Completions.New(context.Background(),
+func AgentLoop(ctx context.Context, client openai.Client, prompt []openai.ChatCompletionMessageParamUnion) (string, error) {
+	resp, err := client.Chat.Completions.New(ctx,
 		openai.ChatCompletionNewParams{
 			Model:    "anthropic/claude-haiku-4.5",
 			Messages: prompt,
@@ -67,18 +65,17 @@ func AgentLoop(client openai.Client, prompt []openai.ChatCompletionMessageParamU
 	)
 
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "error: %v\n", err)
-		os.Exit(1)
+		return "", fmt.Errorf("error getting response back from client: %w", err)
 	}
 
 	messages := []openai.ChatCompletionMessageParamUnion{}
 	messages = append(messages, prompt...)
 
 	if len(resp.Choices[0].Message.ToolCalls) == 0 {
-		return resp.Choices[0].Message.Content
+		return resp.Choices[0].Message.Content, nil
 	}
 
-	var toolCalls []openai.ChatCompletionMessageToolCallUnionParam
+	toolCalls := make([]openai.ChatCompletionMessageToolCallUnionParam, 0, len(resp.Choices[0].Message.ToolCalls))
 	for _, tc := range resp.Choices[0].Message.ToolCalls {
 		toolCalls = append(toolCalls, tc.ToParam())
 	}
@@ -91,26 +88,29 @@ func AgentLoop(client openai.Client, prompt []openai.ChatCompletionMessageParamU
 	})
 
 	for i := range resp.Choices[0].Message.ToolCalls {
-		var tool_call = resp.Choices[0].Message.ToolCalls[i]
-		argsJSON := tool_call.Function.Arguments
+		var toolCall = resp.Choices[0].Message.ToolCalls[i]
+		argsJSON := toolCall.Function.Arguments
 		var params map[string]string
 		err := json.Unmarshal([]byte(argsJSON), &params)
 		if err != nil {
-			log.Fatalf("Failed to parse response: %s", err)
+			return "", fmt.Errorf("could not parse response params %w", err)
 		}
 
-		if tool_call.Type == "function" && tool_call.Function.Name == "Read" {
-			messages = ReadTool(tool_call, params, messages)
+		switch toolCall.Function.Name {
+		case "Read":
+			messages, err = ReadTool(toolCall, params, messages)
+		case "Write":
+			messages, err = WriteTool(toolCall, params, messages)
+		case "Bash":
+			messages, err = BashTool(toolCall, params, messages)
+		default:
+			return "", fmt.Errorf("Unsupported tool call")
 		}
 
-		if tool_call.Type == "function" && tool_call.Function.Name == "Write" {
-			messages = WriteTool(tool_call, params, messages)
-		}
-
-		if tool_call.Type == "function" && tool_call.Function.Name == "Bash" {
-			messages = BashTool(tool_call, params, messages)
+		if err != nil {
+			return "", err
 		}
 	}
 
-	return AgentLoop(client, messages)
+	return AgentLoop(ctx, client, messages)
 }
