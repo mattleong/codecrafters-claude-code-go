@@ -32,6 +32,23 @@ func agent_loop(client openai.Client, prompt []openai.ChatCompletionMessageParam
 						"required": []string{"file_path"},
 					},
 				}),
+				openai.ChatCompletionFunctionTool(openai.FunctionDefinitionParam{
+					Name:        "Write",
+					Description: openai.String("Write content to a file"),
+					Parameters: openai.FunctionParameters{
+						"type": "object",
+						"properties": map[string]any{
+							"file_path": map[string]any{
+								"type":        "string",
+								"description": "The path of the file to write to",
+							},
+							"content": map[string]any{
+								"type":        "string",
+								"description": "The content to write to the file",
+							},
+						},
+					},
+				}),
 			},
 		},
 	)
@@ -64,15 +81,14 @@ func agent_loop(client openai.Client, prompt []openai.ChatCompletionMessageParam
 
 	for i := range resp.Choices[0].Message.ToolCalls {
 		var tool_call = resp.Choices[0].Message.ToolCalls[i]
+		argsJSON := tool_call.Function.Arguments
+		var params map[string]string
+		err := json.Unmarshal([]byte(argsJSON), &params)
+		if err != nil {
+			log.Fatalf("Failed to parse response: %s", err)
+		}
 
 		if tool_call.Type == "function" && tool_call.Function.Name == "Read" {
-			argsJSON := tool_call.Function.Arguments
-			var params map[string]string
-			err := json.Unmarshal([]byte(argsJSON), &params)
-			if err != nil {
-				log.Fatalf("Failed to parse response: %s", err)
-			}
-
 			content, err := os.ReadFile(params["file_path"])
 			if err != nil {
 				log.Fatalf("Failed to read file: %s", err)
@@ -84,6 +100,23 @@ func agent_loop(client openai.Client, prompt []openai.ChatCompletionMessageParam
 					ToolCallID: tool_call.ID,
 					Content: openai.ChatCompletionToolMessageParamContentUnion{
 						OfString: openai.String(string(content)),
+					},
+				},
+			})
+		}
+
+		if tool_call.Type == "function" && tool_call.Function.Name == "Write" {
+			err = os.WriteFile(params["file_path"], []byte(params["content"]), 0644)
+			if err != nil {
+				log.Fatalf("Failed to write file: %s", params["file_path"])
+			}
+
+			messages = append(messages, openai.ChatCompletionMessageParamUnion{
+				OfTool: &openai.ChatCompletionToolMessageParam{
+					Role:       "tool",
+					ToolCallID: tool_call.ID,
+					Content: openai.ChatCompletionToolMessageParamContentUnion{
+						OfString: openai.String(params["content"]),
 					},
 				},
 			})
