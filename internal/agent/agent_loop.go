@@ -8,8 +8,9 @@ import (
 
 var maxSteps = 100
 
-func (c *Agent) Loop(messages []openai.ChatCompletionMessageParamUnion) (string, error) {
-	messages = append(messages, messages...)
+func (c *Agent) Loop(userMessage []openai.ChatCompletionMessageParamUnion) (string, error) {
+	messages := []openai.ChatCompletionMessageParamUnion{}
+	messages = append(messages, userMessage...)
 
 	for range maxSteps {
 		resp, err := c.client.Chat.Completions.New(c.ctx,
