@@ -10,7 +10,7 @@ import (
 	"github.com/openai/openai-go/v3"
 )
 
-func ReadTool(toolCall openai.ChatCompletionMessageToolCallUnion, params map[string]string, messages []openai.ChatCompletionMessageParamUnion) ([]openai.ChatCompletionMessageParamUnion, error) {
+func readTool(toolCall openai.ChatCompletionMessageToolCallUnion, params map[string]string, messages []openai.ChatCompletionMessageParamUnion) ([]openai.ChatCompletionMessageParamUnion, error) {
 	filePath, ok := params["file_path"]
 	if !ok || filePath == "" {
 		return nil, fmt.Errorf("missing file_path")
@@ -23,7 +23,6 @@ func ReadTool(toolCall openai.ChatCompletionMessageToolCallUnion, params map[str
 
 	messages = append(messages, openai.ChatCompletionMessageParamUnion{
 		OfTool: &openai.ChatCompletionToolMessageParam{
-			Role:       "tool",
 			ToolCallID: toolCall.ID,
 			Content: openai.ChatCompletionToolMessageParamContentUnion{
 				OfString: openai.String(string(content)),
@@ -34,7 +33,7 @@ func ReadTool(toolCall openai.ChatCompletionMessageToolCallUnion, params map[str
 	return messages, nil
 }
 
-func WriteTool(toolCall openai.ChatCompletionMessageToolCallUnion, params map[string]string, messages []openai.ChatCompletionMessageParamUnion) ([]openai.ChatCompletionMessageParamUnion, error) {
+func writeTool(toolCall openai.ChatCompletionMessageToolCallUnion, params map[string]string, messages []openai.ChatCompletionMessageParamUnion) ([]openai.ChatCompletionMessageParamUnion, error) {
 	filePath, ok := params["file_path"]
 	if !ok || filePath == "" {
 		return nil, fmt.Errorf("missing file_path")
@@ -52,7 +51,6 @@ func WriteTool(toolCall openai.ChatCompletionMessageToolCallUnion, params map[st
 
 	messages = append(messages, openai.ChatCompletionMessageParamUnion{
 		OfTool: &openai.ChatCompletionToolMessageParam{
-			Role:       "tool",
 			ToolCallID: toolCall.ID,
 			Content: openai.ChatCompletionToolMessageParamContentUnion{
 				OfString: openai.String(content),
@@ -62,7 +60,7 @@ func WriteTool(toolCall openai.ChatCompletionMessageToolCallUnion, params map[st
 	return messages, nil
 }
 
-func BashTool(toolCall openai.ChatCompletionMessageToolCallUnion, params map[string]string, messages []openai.ChatCompletionMessageParamUnion) ([]openai.ChatCompletionMessageParamUnion, error) {
+func bashTool(toolCall openai.ChatCompletionMessageToolCallUnion, params map[string]string, messages []openai.ChatCompletionMessageParamUnion) ([]openai.ChatCompletionMessageParamUnion, error) {
 	command, ok := params["command"]
 	if !ok {
 		return nil, fmt.Errorf("missing command")
@@ -76,7 +74,6 @@ func BashTool(toolCall openai.ChatCompletionMessageToolCallUnion, params map[str
 
 	messages = append(messages, openai.ChatCompletionMessageParamUnion{
 		OfTool: &openai.ChatCompletionToolMessageParam{
-			Role:       "tool",
 			ToolCallID: toolCall.ID,
 			Content: openai.ChatCompletionToolMessageParamContentUnion{
 				OfString: openai.String(string(out)),
@@ -158,11 +155,11 @@ func ExecuteToolCalls(toolCalls []openai.ChatCompletionMessageToolCallUnion, mes
 
 		switch toolCall.Function.Name {
 		case "Read":
-			messages, err = ReadTool(toolCall, params, messages)
+			messages, err = readTool(toolCall, params, messages)
 		case "Write":
-			messages, err = WriteTool(toolCall, params, messages)
+			messages, err = writeTool(toolCall, params, messages)
 		case "Bash":
-			messages, err = BashTool(toolCall, params, messages)
+			messages, err = bashTool(toolCall, params, messages)
 		default:
 			return nil, fmt.Errorf("unsupported tool call")
 		}

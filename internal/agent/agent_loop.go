@@ -31,7 +31,6 @@ func (c *Agent) Loop(messages []openai.ChatCompletionMessageParamUnion) (string,
 
 		messages = append(messages, openai.ChatCompletionMessageParamUnion{
 			OfAssistant: &openai.ChatCompletionAssistantMessageParam{
-				Role:      "assistant",
 				ToolCalls: GetToolCallParams(toolCalls),
 			},
 		})
