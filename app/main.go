@@ -1,7 +1,6 @@
 package main
 
 import (
-	"context"
 	"flag"
 	"fmt"
 	"github.com/codecrafters-io/claude-code-starter-go/internal/agent"
@@ -19,7 +18,7 @@ func main() {
 		log.Fatalf("Prompt must not be empty")
 	}
 
-	client, err := c.NewClient()
+	err := c.InitClient()
 	if err != nil {
 		log.Fatalf("Unable to initialize client: %s", err)
 	}
@@ -34,9 +33,7 @@ func main() {
 		},
 	}
 
-	ctx := context.Background()
-
-	result, err := agent.AgentLoop(ctx, client, initialPrompt)
+	result, err := agent.AgentLoop(initialPrompt)
 	if err != nil {
 		log.Fatalf("Could not complete agent loop: %s", err)
 	}
