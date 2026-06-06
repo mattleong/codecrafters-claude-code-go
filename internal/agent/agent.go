@@ -1,6 +1,7 @@
 package agent
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 
@@ -8,8 +9,8 @@ import (
 	"github.com/openai/openai-go/v3"
 )
 
-func AgentLoop(prompt []openai.ChatCompletionMessageParamUnion) (string, error) {
-	resp, err := client.MakeRequest(prompt)
+func AgentLoop(ctx context.Context, prompt []openai.ChatCompletionMessageParamUnion) (string, error) {
+	resp, err := client.MakeRequest(ctx, prompt)
 
 	if err != nil {
 		return "", fmt.Errorf("error getting response back from client: %w", err)
@@ -59,5 +60,5 @@ func AgentLoop(prompt []openai.ChatCompletionMessageParamUnion) (string, error) 
 		}
 	}
 
-	return AgentLoop(messages)
+	return AgentLoop(ctx, messages)
 }

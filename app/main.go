@@ -1,12 +1,14 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"fmt"
+	"log"
+
 	"github.com/codecrafters-io/claude-code-starter-go/internal/agent"
 	c "github.com/codecrafters-io/claude-code-starter-go/internal/client"
 	"github.com/openai/openai-go/v3"
-	"log"
 )
 
 func main() {
@@ -33,7 +35,9 @@ func main() {
 		},
 	}
 
-	result, err := agent.AgentLoop(initialPrompt)
+	ctx := context.Background()
+
+	result, err := agent.AgentLoop(ctx, initialPrompt)
 	if err != nil {
 		log.Fatalf("Could not complete agent loop: %s", err)
 	}

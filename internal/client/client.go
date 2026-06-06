@@ -9,7 +9,6 @@ import (
 	"github.com/openai/openai-go/v3/option"
 )
 
-var ctx context.Context
 var client openai.Client
 
 func InitClient() error {
@@ -23,13 +22,12 @@ func InitClient() error {
 		return fmt.Errorf("no API key found")
 	}
 
-	ctx = context.Background()
 	client = openai.NewClient(option.WithAPIKey(apiKey), option.WithBaseURL(baseURL))
 
 	return nil
 }
 
-func MakeRequest(prompt []openai.ChatCompletionMessageParamUnion) (*openai.ChatCompletion, error) {
+func MakeRequest(ctx context.Context, prompt []openai.ChatCompletionMessageParamUnion) (*openai.ChatCompletion, error) {
 	return client.Chat.Completions.New(ctx,
 		openai.ChatCompletionNewParams{
 			Model:    "anthropic/claude-haiku-4.5",
