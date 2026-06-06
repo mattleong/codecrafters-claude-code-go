@@ -33,13 +33,3 @@ func NewAgent(model shared.ChatModel) (*Agent, error) {
 		model:  model,
 	}, nil
 }
-
-func (c *Agent) SendChatCompletion(prompt []openai.ChatCompletionMessageParamUnion) (*openai.ChatCompletion, error) {
-	return c.client.Chat.Completions.New(c.ctx,
-		openai.ChatCompletionNewParams{
-			Model:    c.model,
-			Messages: prompt,
-			Tools:    GetToolParams(),
-		},
-	)
-}

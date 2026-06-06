@@ -8,12 +8,17 @@ import (
 
 var maxSteps = 100
 
-func (c *Agent) Loop(prompt []openai.ChatCompletionMessageParamUnion) (string, error) {
-	messages := []openai.ChatCompletionMessageParamUnion{}
-	messages = append(messages, prompt...)
+func (c *Agent) Loop(messages []openai.ChatCompletionMessageParamUnion) (string, error) {
+	messages = append(messages, messages...)
 
 	for range maxSteps {
-		resp, err := c.SendChatCompletion(messages)
+		resp, err := c.client.Chat.Completions.New(c.ctx,
+			openai.ChatCompletionNewParams{
+				Model:    c.model,
+				Messages: messages,
+				Tools:    GetToolParams(),
+			},
+		)
 		if err != nil {
 			return "", fmt.Errorf("error getting response back from client: %w", err)
 		}
@@ -41,4 +46,16 @@ func (c *Agent) Loop(prompt []openai.ChatCompletionMessageParamUnion) (string, e
 	}
 
 	return "", fmt.Errorf("agent exceeded max steps: %d", maxSteps)
+}
+
+func (c *Agent) StartLoop(prompt string) (string, error) {
+	return c.Loop([]openai.ChatCompletionMessageParamUnion{
+		{
+			OfUser: &openai.ChatCompletionUserMessageParam{
+				Content: openai.ChatCompletionUserMessageParamContentUnion{
+					OfString: openai.String(prompt),
+				},
+			},
+		},
+	})
 }

@@ -6,7 +6,6 @@ import (
 	"log"
 
 	"github.com/codecrafters-io/claude-code-starter-go/internal/agent"
-	"github.com/openai/openai-go/v3"
 )
 
 func main() {
@@ -23,15 +22,7 @@ func main() {
 		log.Fatalf("Unable to initialize client: %s", err)
 	}
 
-	result, err := agentClient.Loop([]openai.ChatCompletionMessageParamUnion{
-		{
-			OfUser: &openai.ChatCompletionUserMessageParam{
-				Content: openai.ChatCompletionUserMessageParamContentUnion{
-					OfString: openai.String(prompt),
-				},
-			},
-		},
-	})
+	result, err := agentClient.StartLoop(prompt)
 	if err != nil {
 		log.Fatalf("Could not complete agent loop: %s", err)
 	}
