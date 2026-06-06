@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"fmt"
 	"log"
@@ -17,12 +18,13 @@ func main() {
 		log.Fatalf("Prompt must not be empty")
 	}
 
+	ctx := context.Background()
 	agentClient, err := agent.NewAgent("anthropic/claude-haiku-4.5")
 	if err != nil {
 		log.Fatalf("Unable to initialize client: %s", err)
 	}
 
-	result, err := agentClient.StartLoop(prompt)
+	result, err := agentClient.StartLoop(ctx, prompt)
 	if err != nil {
 		log.Fatalf("Could not complete agent loop: %s", err)
 	}

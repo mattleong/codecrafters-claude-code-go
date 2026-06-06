@@ -1,19 +1,20 @@
 package agent
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/openai/openai-go/v3"
 )
 
-var maxSteps = 100
+const maxSteps = 100
 
-func (c *Agent) Loop(userMessage []openai.ChatCompletionMessageParamUnion) (string, error) {
+func (c *Agent) Loop(ctx context.Context, userMessage []openai.ChatCompletionMessageParamUnion) (string, error) {
 	messages := []openai.ChatCompletionMessageParamUnion{}
 	messages = append(messages, userMessage...)
 
 	for range maxSteps {
-		resp, err := c.client.Chat.Completions.New(c.ctx,
+		resp, err := c.client.Chat.Completions.New(ctx,
 			openai.ChatCompletionNewParams{
 				Model:    c.model,
 				Messages: messages,
@@ -45,8 +46,8 @@ func (c *Agent) Loop(userMessage []openai.ChatCompletionMessageParamUnion) (stri
 	return "", fmt.Errorf("agent exceeded max steps: %d", maxSteps)
 }
 
-func (c *Agent) StartLoop(prompt string) (string, error) {
-	return c.Loop([]openai.ChatCompletionMessageParamUnion{
+func (c *Agent) StartLoop(ctx context.Context, prompt string) (string, error) {
+	return c.Loop(ctx, []openai.ChatCompletionMessageParamUnion{
 		{
 			OfUser: &openai.ChatCompletionUserMessageParam{
 				Content: openai.ChatCompletionUserMessageParamContentUnion{
