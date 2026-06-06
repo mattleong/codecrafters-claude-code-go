@@ -16,30 +16,27 @@ func (c *Agent) Loop(messages []openai.ChatCompletionMessageParamUnion) (string,
 			openai.ChatCompletionNewParams{
 				Model:    c.model,
 				Messages: messages,
-				Tools:    GetToolParams(),
+				Tools:    GetToolDefinitionParams(),
 			},
 		)
 		if err != nil {
 			return "", fmt.Errorf("error getting response back from client: %w", err)
 		}
 
-		if len(resp.Choices[0].Message.ToolCalls) == 0 {
-			return resp.Choices[0].Message.Content, nil
-		}
+		toolCalls := resp.Choices[0].Message.ToolCalls
 
-		toolCallParams := make([]openai.ChatCompletionMessageToolCallUnionParam, 0, len(resp.Choices[0].Message.ToolCalls))
-		for _, tc := range resp.Choices[0].Message.ToolCalls {
-			toolCallParams = append(toolCallParams, tc.ToParam())
+		if len(toolCalls) == 0 {
+			return resp.Choices[0].Message.Content, nil
 		}
 
 		messages = append(messages, openai.ChatCompletionMessageParamUnion{
 			OfAssistant: &openai.ChatCompletionAssistantMessageParam{
 				Role:      "assistant",
-				ToolCalls: toolCallParams,
+				ToolCalls: GetToolCallParams(toolCalls),
 			},
 		})
 
-		messages, err = ExecuteTool(resp.Choices[0].Message.ToolCalls, messages)
+		messages, err = ExecuteToolCalls(toolCalls, messages)
 		if err != nil {
 			return "", fmt.Errorf("error executing tool call: %w", err)
 		}

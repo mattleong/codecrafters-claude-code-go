@@ -86,7 +86,7 @@ func BashTool(toolCall openai.ChatCompletionMessageToolCallUnion, params map[str
 	return messages, nil
 }
 
-func GetToolParams() []openai.ChatCompletionToolUnionParam {
+func GetToolDefinitionParams() []openai.ChatCompletionToolUnionParam {
 	return []openai.ChatCompletionToolUnionParam{
 		openai.ChatCompletionFunctionTool(openai.FunctionDefinitionParam{
 			Name:        "Read",
@@ -138,7 +138,16 @@ func GetToolParams() []openai.ChatCompletionToolUnionParam {
 	}
 }
 
-func ExecuteTool(toolCalls []openai.ChatCompletionMessageToolCallUnion, messages []openai.ChatCompletionMessageParamUnion) ([]openai.ChatCompletionMessageParamUnion, error) {
+func GetToolCallParams(toolCalls []openai.ChatCompletionMessageToolCallUnion) []openai.ChatCompletionMessageToolCallUnionParam {
+	toolCallParams := make([]openai.ChatCompletionMessageToolCallUnionParam, 0, len(toolCalls))
+	for _, tc := range toolCalls {
+		toolCallParams = append(toolCallParams, tc.ToParam())
+	}
+
+	return toolCallParams
+}
+
+func ExecuteToolCalls(toolCalls []openai.ChatCompletionMessageToolCallUnion, messages []openai.ChatCompletionMessageParamUnion) ([]openai.ChatCompletionMessageParamUnion, error) {
 	for _, toolCall := range toolCalls {
 		argsJSON := toolCall.Function.Arguments
 		var params map[string]string
