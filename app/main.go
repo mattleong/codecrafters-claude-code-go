@@ -1,13 +1,11 @@
 package main
 
 import (
-	"context"
 	"flag"
 	"fmt"
 	"log"
 
 	"github.com/codecrafters-io/claude-code-starter-go/internal/agent"
-	c "github.com/codecrafters-io/claude-code-starter-go/internal/client"
 	"github.com/openai/openai-go/v3"
 )
 
@@ -20,12 +18,12 @@ func main() {
 		log.Fatalf("Prompt must not be empty")
 	}
 
-	err := c.InitClient()
+	agentClient, err := agent.NewAgent("anthropic/claude-haiku-4.5")
 	if err != nil {
 		log.Fatalf("Unable to initialize client: %s", err)
 	}
 
-	initialPrompt := []openai.ChatCompletionMessageParamUnion{
+	result, err := agentClient.Loop([]openai.ChatCompletionMessageParamUnion{
 		{
 			OfUser: &openai.ChatCompletionUserMessageParam{
 				Content: openai.ChatCompletionUserMessageParamContentUnion{
@@ -33,11 +31,7 @@ func main() {
 				},
 			},
 		},
-	}
-
-	ctx := context.Background()
-
-	result, err := agent.AgentLoop(ctx, initialPrompt)
+	})
 	if err != nil {
 		log.Fatalf("Could not complete agent loop: %s", err)
 	}
